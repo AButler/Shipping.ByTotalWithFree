@@ -1,0 +1,561 @@
+﻿@model Nop.Plugin.Shipping.ByTotalWithFree.Models.ShippingByTotalListModel
+@using Nop.Web.Framework;
+@using Nop.Core.Infrastructure;
+@{
+    Layout = "";
+
+    var defaultGridPageSize = EngineContext.Current.Resolve<Nop.Core.Domain.Common.AdminAreaSettings>().DefaultGridPageSize;
+    var gridPageSizes = EngineContext.Current.Resolve<Nop.Core.Domain.Common.AdminAreaSettings>().GridPageSizes;
+}
+<table class="adminContent">
+    <tr>
+        <td>
+            <div id="shipping-bytotal-grid"></div>
+            <script type="text/javascript">
+                $(document).ready(function () {
+                    $("#shipping-bytotal-grid").kendoGrid({
+                        dataSource: {
+                            type: "json",
+                            transport: {
+                                destroy: {
+                                    url: "@Html.Raw( Url.Action( "RateDelete", "ShippingByTotalWithFree", new RouteValueDictionary() { { "Namespaces", "Nop.Plugin.Shipping.ByTotalWithFree.Controllers" }, { "area", "" } } ) )",
+                                    type: "POST",
+                                    dataType: "json"
+                                },
+                                read: {
+                                    url: "@Html.Raw( Url.Action( "RatesList", "ShippingByTotalWithFree", new RouteValueDictionary() { { "Namespaces", "Nop.Plugin.Shipping.ByTotalWithFree.Controllers" }, { "area", "" } } ) )",
+                                    type: "POST",
+                                    dataType: "json"
+                                },
+                                update: {
+                                    url: "@Html.Raw( Url.Action( "RateUpdate", "ShippingByTotalWithFree", new RouteValueDictionary() { { "Namespaces", "Nop.Plugin.Shipping.ByTotalWithFree.Controllers" }, { "area", "" } } ) )",
+                                    type: "POST",
+                                    dataType: "json"
+                                }
+                            },schema: {
+                                data: "Data",
+                                total: "Total",
+                                errors: "Errors",
+                                model: {
+                                    id: "Id",
+                                    fields: {
+                                        DisplayOrder: { type: "number" },
+                                        UsePercentage:{ type: "boolean" },
+                                        From: { type: "number" },
+                                        To: { type: "number" },
+                                        ShippingChargeAmount: { type: "number" },
+                                        ShippingChargePercentage: { type: "number" }
+                                    }
+                                }
+                            },
+                            requestEnd: function (e) {
+                                if (e.type == "update") {
+                                    this.read();
+                                }
+                            },
+                            error: function (e) {
+                                display_kendoui_grid_error(e);
+                                this.cancelChanges();
+                            },
+                            pageSize: @(defaultGridPageSize),
+                            serverPaging: true,
+                            serverFiltering: true,
+                            serverSorting: true
+                        },
+                        pageable: {
+                            refresh: true,
+                            pageSizes: [@(gridPageSizes)]
+                        },
+                        editable: {
+                            confirmation: false,
+                            mode: "inline"
+                        },
+                        scrollable: false,
+                        columns: [{
+                            field: "StoreId",
+                            title: "@T( "Plugins.Shipping.ByTotalWithFree.Fields.Store" )",
+                            width: 250,
+                            editor: storesDropDownEditor,
+                            template: "#=StoreName#"
+                        }, {
+                            field: "CountryId",
+                            title: "@T( "Plugins.Shipping.ByTotalWithFree.Fields.Country" )",
+                            width: 250,
+                            editor: countriesDropDownEditor,
+                            template: "#=CountryName#"
+                        }, {
+                            field: "StateProvinceId",
+                            title: "@T( "Plugins.Shipping.ByTotalWithFree.Fields.StateProvince" )",
+                            width: 250,
+                            editor: statesProvincesDropDownEditor,
+                            template: "#=StateProvinceName#"
+                        }, {
+                            field: "ZipPostalCode",
+                            title: "@T( "Plugins.Shipping.ByTotalWithFree.Fields.ZipPostalCode" )",
+                            width: 200
+                        }, {
+                            field: "DisplayOrder",
+                            title: "@T( "Plugins.Shipping.ByTotalWithFree.Fields.DisplayOrder" )",
+                            width: 100,
+                            editor: function (container, options) {
+                                $('<input name="' + options.field + '"/>')
+                                        .appendTo(container)
+                                        .kendoNumericTextBox({
+                                            format: "{0:n0}",
+                                            decimals: 0
+                                        });
+                            }
+                        }, {
+                            field: "ShippingMethodId",
+                            title: "@T( "Plugins.Shipping.ByTotalWithFree.Fields.ShippingMethod" )",
+                            width: 200,
+                            editor: shippingMethodsDropDownEditor,
+                            template: "#=ShippingMethodName#"
+                        }, {
+                            field: "From",
+                            title: "@T( "Plugins.Shipping.ByTotalWithFree.Fields.From" )",
+                            width: 150
+                        }, {
+                            field: "To",
+                            title: "@T( "Plugins.Shipping.ByTotalWithFree.Fields.To" )",
+                            width: 150
+                        }, {
+                            field: "UsePercentage",
+                            title: "@T( "Plugins.Shipping.ByTotalWithFree.Fields.UsePercentage" )",
+                            width: 100,
+                            attributes: { style: "text-align:center" },
+                            template: "<input type='checkbox' disabled='disabled' name='UsePercentage' # if(UsePercentage) {# checked='checked' #}  #/>"
+                        }, {
+                            field: "ShippingChargePercentage",
+                            title: "@T( "Plugins.Shipping.ByTotalWithFree.Fields.ShippingChargePercentage" )",
+                            width: 200
+                        }, {
+                            field: "ShippingChargeAmount",
+                            title: "@T( "Plugins.Shipping.ByTotalWithFree.Fields.ShippingChargeAmount" )",
+                            width: 150
+                        }, {
+                            command: {name: "edit", text: "@T("Admin.Common.Edit")"},
+                            title: "@T("Admin.Common.Edit")",
+                            width: 150
+                        }, {
+                            command: { name: "destroy", text: "@T("Admin.Common.Delete")" },
+                            title: "@T("Admin.Common.Delete")",
+                            width: 100
+                        }]
+                    });
+                });
+            </script>
+        </td>
+    </tr>
+</table>
+<p>
+</p>
+<script type="text/javascript">
+    $(function () {
+        $("#@Html.FieldIdFor(model => model.AddCountryId)").change(function () {
+            var selectedItem = $(this).val();
+            var ddlStates = $("#@Html.FieldIdFor(model => model.AddStateProvinceId)")
+            $.ajax({
+                cache: false,
+                type: "GET",
+                url: "@(Url.Action("GetStatesByCountryId", "Country", new RouteValueDictionary() { { "area", "Admin" } }))",
+                data: { "countryId": selectedItem, "addAsterisk": "true" },
+                success: function (data) {
+                    ddlStates.html('');
+                    $.each(data, function (id, option) {
+                        ddlStates.append($('<option></option>').val(option.id).html(option.name));
+                    });
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    alert('@T( "Plugins.Shipping.ByTotalWithFree.ManageShippingSettings.StatesFailed" ).Text');
+                }
+            });
+        });
+    });
+
+    @* available shipping methods for inline editing *@
+    var shippingMethods = [
+     @for (int i = 0; i < Model.AvailableShippingMethods.Count; i++)
+     {
+        var shippingMethod = Model.AvailableShippingMethods[i];
+        <text>
+        {
+            ShippingMethodId: @shippingMethod.Value,
+            ShippingMethodName: "@(shippingMethod.Text)"
+        }</text>
+        if (i != Model.AvailableShippingMethods.Count - 1)
+        {
+            <text>,</text>
+        }
+     }
+    ];
+
+    @* available stores for inline editing *@
+    var stores = [
+     @for (int i = 0; i < Model.AvailableStores.Count; i++)
+     {
+        var store = Model.AvailableStores[i];
+        <text>
+        {
+            StoreId: @store.Value,
+            StoreName: "@(store.Text)"
+        }</text>
+        if (i != Model.AvailableStores.Count - 1)
+        {
+            <text>,</text>
+        }
+     }
+    ];
+
+    @* available countries for inline editing *@
+    var countries = [
+     @for (int i = 0; i < Model.AvailableCountries.Count; i++)
+     {
+        var country = Model.AvailableCountries[i];
+        <text>
+        {
+            CountryId: @country.Value,
+            CountryName: "@(country.Text)"
+        }</text>
+        if (i != Model.AvailableCountries.Count - 1)
+        {
+            <text>,</text>
+        }
+     }
+    ];
+
+    function shippingMethodsDropDownEditor(container, options) {
+        $('<input required data-text-field="ShippingMethodName" data-value-field="ShippingMethodId" data-bind="value:' + options.field + '"/>')
+            .appendTo(container)
+            .kendoDropDownList({
+                autoBind: false,
+                dataSource: {
+                    data: shippingMethods,
+                    schema: {
+                        model: {
+                            fields: {
+                                ShippingMethodId: { type: "string" },
+                                ShippingMethodName: { type: "string" },
+                            }
+                        }
+                    },
+                    error: function (e) {
+                        display_kendoui_grid_error(e);
+                        this.cancelChanges();
+                    }
+                },
+            });
+    }
+
+    function storesDropDownEditor(container, options) {
+        $('<input required data-text-field="StoreName" data-value-field="StoreId" data-bind="value:' + options.field + '"/>')
+            .appendTo(container)
+            .kendoDropDownList({
+                autoBind: false,
+                dataSource: {
+                    data: stores,
+                    schema: {
+                        model: {
+                            fields: {
+                                StoreId: { type: "string" },
+                                StoreName: { type: "string" },
+                            }
+                        }
+                    },
+                    error: function (e) {
+                        display_kendoui_grid_error(e);
+                        this.cancelChanges();
+                    }
+                },
+            });
+    }
+
+    function countriesDropDownEditor(container, options) {
+        $('<input required data-text-field="CountryName" data-value-field="CountryId" data-bind="value:' + options.field + '"/>')
+            .appendTo(container)
+            .kendoDropDownList({
+                autoBind: false,
+                dataSource: {
+                    data: countries,
+                    schema: {
+                        model: {
+                            fields: {
+                                CountryId: { type: "string" },
+                                CountryName: { type: "string" },
+                            }
+                        }
+                    },
+                    error: function (e) {
+                        display_kendoui_grid_error(e);
+                        this.cancelChanges();
+                    }
+                },
+            }).change(function(e){
+                options.model.StateProvinceId = 0;
+                var statesProvincesDDL = $('[data-value-field=StateProvinceId]').data("kendoDropDownList");
+                statesProvincesDDL.dataSource.transport.options.read.data = { countryId: options.model.CountryId, addAsterisk: "true" }
+                statesProvincesDDL.dataSource.read();
+            });
+    }
+
+    function statesProvincesDropDownEditor(container, options) {
+        $('<input required data-text-field="StateProvinceName" data-value-field="StateProvinceId" data-bind="value:' + options.field + '"/>')
+            .appendTo(container)
+            .kendoDropDownList({
+                autoBind: false,
+                dataSource: {
+                    transport: {
+                        read: {
+                            url:"@(Url.Action("GetStatesByCountryId", "Country", new RouteValueDictionary() { { "area", "Admin" } }))",
+                            dataType: "json",
+                            data: { countryId: options.model.CountryId, addAsterisk: "true" }
+                        }
+                    },
+                    schema: {
+                        model: {
+                            fields: {
+                                StateProvinceId: { type: "string" },
+                                StateProvinceName: { type: "string" },
+                            }
+                        },
+                        parse: function(response) {
+                            var statesProvices = [];
+                            for (var i = 0; i < response.length; i++) {
+                                var stateProvince = {
+                                    StateProvinceId: response[i].id,
+                                    StateProvinceName: response[i].name
+                                };
+                                statesProvices.push(stateProvince);
+                            }
+                            return statesProvices;
+                        }
+                    },
+                    error: function (e) {
+                        display_kendoui_grid_error(e);
+                        this.cancelChanges();
+                    }
+                }
+            });
+    }
+</script>
+@using ( Html.BeginForm() ) {
+    <script type="text/javascript">
+        $(function () {
+            $("#@Html.FieldIdFor(model => model.AddUsePercentage)").click(toggleAddUsePercentage);
+            toggleAddUsePercentage();
+        });
+        function toggleAddUsePercentage() {
+            if ($('#@Html.FieldIdFor(model => model.AddUsePercentage)').is(':checked')) {
+                $('#pnlAddShippingChargePercentage').show();
+                $('#pnlAddShippingChargeAmount').hide();
+            }
+            else {
+                $('#pnlAddShippingChargePercentage').hide();
+                $('#pnlAddShippingChargeAmount').show();
+            }
+        }
+        $(function () {
+            $('#addshippingbytotalrecord').click(function () {
+                $.ajax({
+                    cache: false,
+                    type: 'POST',
+                    url: '@Url.RouteUrl( "Plugin.Shipping.ByTotalWithFree.AddShippingRate" )',
+                    data: $(this.form).serialize(),
+                    dataType: 'json',
+                    success: function (data) {
+                        if (data.Result == true) {
+                            var grid = $("#shipping-bytotal-grid").data("kendoGrid");
+                            grid.dataSource.read();
+                        }
+                        else {
+                            alert(data.Message);
+                        }
+                    },
+                    error: function (xhr, ajaxOptions, thrownError) {
+                        alert('@T( "Plugins.Shipping.ByTotalWithFree.ManageShippingSettings.AddFailed" ).Text');
+                    }
+                });
+                return false;
+            });
+        });
+
+        $(function () {
+            $('#savegeneralsettings').click(function () {
+                $.ajax({
+                    cache: false,
+                    type: 'POST',
+                    url: '@Url.RouteUrl( "Plugin.Shipping.ByTotalWithFree.SaveGeneralSettings" )',
+                    data: $(this.form).serialize(),
+                    dataType: 'json',
+                    success: function (data) {
+                        alert(data.Message);
+                    },
+                    error: function (xhr, ajaxOptions, thrownError) {
+                        alert('@T( "Plugins.Shipping.ByTotalWithFree.ManageShippingSettings.AddFailed" ).Text');
+                    }
+                });
+                return false;
+            });
+        });
+
+        $(function () {
+            $('#resetshippingbytotalrecord').click(function () {
+                $('#@Html.FieldIdFor(model => model.AddUsePercentage)').attr('checked', false);
+                toggleAddUsePercentage();
+            });
+        });
+    </script>
+    <fieldset>
+        <legend><span style="font-weight: 700">@T( "Plugins.Shipping.ByTotalWithFree.AddNewRecordTitle" )</span></legend>
+        <table class="adminContent">
+            <tr>
+                <td class="adminTitle">
+                    @Html.NopLabelFor( model => model.AddStoreId ):
+                </td>
+                <td class="adminData">
+                    @Html.DropDownListFor( model => model.AddStoreId, Model.AvailableStores )
+                    @Html.ValidationMessageFor( model => model.AddStoreId )
+                </td>
+            </tr>
+            <tr>
+                <td class="adminTitle">
+                    @Html.NopLabelFor( model => model.AddCountryId ):
+                </td>
+                <td class="adminData">
+                    @Html.DropDownListFor( model => model.AddCountryId, Model.AvailableCountries )
+                    @Html.ValidationMessageFor( model => model.AddCountryId )
+                </td>
+            </tr>
+            <tr>
+                <td class="adminTitle">
+                    @Html.NopLabelFor( model => model.AddStateProvinceId ):
+                </td>
+                <td class="adminData">
+                    @Html.DropDownListFor( model => model.AddStateProvinceId, Model.AvailableStates )
+                    @Html.ValidationMessageFor( model => model.AddStateProvinceId )
+                </td>
+            </tr>
+            <tr>
+                <td class="adminTitle">
+                    @Html.NopLabelFor( model => model.AddZipPostalCode ):
+                </td>
+                <td class="adminData">
+                    @Html.EditorFor( model => model.AddZipPostalCode )
+                    @Html.ValidationMessageFor( model => model.AddZipPostalCode )
+                </td>
+            </tr>
+            <tr>
+                <td class="adminTitle">
+                    @Html.NopLabelFor( model => model.AddDisplayOrder ):
+                </td>
+                <td class="adminData">
+                    @Html.EditorFor( model => model.AddDisplayOrder )
+                    @Html.ValidationMessageFor( model => model.AddDisplayOrder )
+                </td>
+            </tr>
+            <tr>
+                <td class="adminTitle">
+                    @Html.NopLabelFor( model => model.AddShippingMethodId ):
+                </td>
+                <td class="adminData">
+                    @Html.DropDownListFor( model => model.AddShippingMethodId, Model.AvailableShippingMethods )
+                    @Html.ValidationMessageFor( model => model.AddShippingMethodId )
+                </td>
+            </tr>
+            <tr>
+                <td class="adminTitle">
+                    @Html.NopLabelFor( model => model.AddFrom ):
+                </td>
+                <td class="adminData">
+                    @Html.EditorFor( model => model.AddFrom ) [@Model.PrimaryStoreCurrencyCode]
+                    @Html.ValidationMessageFor( model => model.AddFrom )
+                </td>
+            </tr>
+            <tr>
+                <td class="adminTitle">
+                    @Html.NopLabelFor( model => model.AddTo ):
+                </td>
+                <td class="adminData">
+                    @Html.EditorFor( model => model.AddTo ) [@Model.PrimaryStoreCurrencyCode]
+                    @Html.ValidationMessageFor( model => model.AddTo )
+                </td>
+            </tr>
+            <tr>
+                <td class="adminTitle">
+                    @Html.NopLabelFor( model => model.AddUsePercentage ):
+                </td>
+                <td class="adminData">
+                    @Html.EditorFor( model => model.AddUsePercentage )
+                    @Html.ValidationMessageFor( model => model.AddUsePercentage )
+                </td>
+            </tr>
+            <tr id="pnlAddShippingChargePercentage">
+                <td class="adminTitle">
+                    @Html.NopLabelFor( model => model.AddShippingChargePercentage ):
+                </td>
+                <td class="adminData">
+                    @Html.EditorFor( model => model.AddShippingChargePercentage )
+                    @Html.ValidationMessageFor( model => model.AddShippingChargePercentage )
+                </td>
+            </tr>
+            <tr id="pnlAddShippingChargeAmount">
+                <td class="adminTitle">
+                    @Html.NopLabelFor( model => model.AddShippingChargeAmount ):
+                </td>
+                <td class="adminData">
+                    @Html.EditorFor( model => model.AddShippingChargeAmount ) [@Model.PrimaryStoreCurrencyCode]
+                    @Html.ValidationMessageFor( model => model.AddShippingChargeAmount )
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <button type="button" id="addshippingbytotalrecord" class="k-button">
+                        @T( "Admin.Common.AddNew" )
+                    </button>
+                    <button type="reset" id="resetshippingbytotalrecord" class="k-button">
+                        @T( "Plugins.Shipping.ByTotalWithFree.Reset" )
+                    </button>
+                </td>
+            </tr>
+        </table>
+    </fieldset>
+    <br />
+    <fieldset>
+        <legend><span style="font-weight: 700">@T( "Plugins.Shipping.ByTotalWithFree.SettingsTitle" )</span></legend>
+        <table class="adminContent">
+            <tr>
+                <td class="adminTitle">
+                    @Html.NopLabelFor( model => model.LimitMethodsToCreated ):
+                </td>
+                <td class="adminData">
+                    @Html.EditorFor( model => model.LimitMethodsToCreated )
+                    @Html.ValidationMessageFor( model => model.LimitMethodsToCreated )
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <button type="button" id="savegeneralsettings" class="k-button">
+                        @T( "Admin.Common.Save" )
+                    </button>
+                </td>
+            </tr>
+        </table>
+    </fieldset>
+    <fieldset>
+        <legend><span style="font-weight: 700">@T( "Plugins.Shipping.ByTotalWithFree.FreeShippingCountriesTitle" )</span></legend>
+        <table class="adminContent">
+            <tr>
+                <td class="adminTitle">
+                    @Html.NopLabelFor( model => model.FreeShippingCountries ):
+                </td>
+                <td class="adminData">
+                    <ul>
+                        @foreach ( var country in Model.FreeShippingCountries ) {
+                            <li>@country.Text</li>
+                        }
+                    </ul>
+                </td>
+            </tr>
+        </table>
+</fieldset>
+}

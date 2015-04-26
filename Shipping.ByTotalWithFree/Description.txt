@@ -1,0 +1,8 @@
+﻿Group: Shipping rate computation
+FriendlyName: Shipping by total with free shipping
+SystemName: Shipping.ByTotalWithFree
+Version: 3.50
+SupportedVersions: 3.50
+Author: webbutler
+DisplayOrder: 1
+FileName: Nop.Plugin.Shipping.ByTotalWithFree.dll
