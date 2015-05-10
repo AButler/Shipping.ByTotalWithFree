@@ -6,11 +6,11 @@ using Nop.Web.Framework.Mvc;
 namespace Nop.Plugin.Shipping.ByTotalWithFree.Models {
   public class ShippingByTotalListModel: BaseNopModel {
     public ShippingByTotalListModel() {
+      AvailableCountriesWithAll = new List<SelectListItem>();
       AvailableCountries = new List<SelectListItem>();
       AvailableStates = new List<SelectListItem>();
       AvailableShippingMethods = new List<SelectListItem>();
       AvailableStores = new List<SelectListItem>();
-      FreeShippingCountries = new List<SelectListItem>();
     }
 
     [NopResourceDisplayName( "Plugins.Shipping.ByTotalWithFree.Fields.Store" )]
@@ -46,17 +46,21 @@ namespace Nop.Plugin.Shipping.ByTotalWithFree.Models {
     [NopResourceDisplayName( "Plugins.Shipping.ByTotalWithFree.Fields.ShippingChargeAmount" )]
     public decimal AddShippingChargeAmount { get; set; }
 
+    [NopResourceDisplayName( "Plugins.Shipping.ByTotalWithFree.Fields.FreeShippingCountry" )]
+    public int AddFreeShippingCountryId { get; set; }
+
+    [NopResourceDisplayName( "Plugins.Shipping.ByTotalWithFree.Fields.Product" )]
+    public int AddProductId { get; set; }
+
     [NopResourceDisplayName( "Plugins.Shipping.ByTotalWithFree.Fields.LimitMethodsToCreated" )]
     public bool LimitMethodsToCreated { get; set; }
 
     public string PrimaryStoreCurrencyCode { get; set; }
 
+    public IList<SelectListItem> AvailableCountriesWithAll { get; set; }
     public IList<SelectListItem> AvailableCountries { get; set; }
     public IList<SelectListItem> AvailableStates { get; set; }
     public IList<SelectListItem> AvailableShippingMethods { get; set; }
     public IList<SelectListItem> AvailableStores { get; set; }
-
-    [NopResourceDisplayName( "Plugins.Shipping.ByTotalWithFree.Fields.FreeShippingCountries" )]
-    public IList<SelectListItem> FreeShippingCountries { get; set; }
   }
 }

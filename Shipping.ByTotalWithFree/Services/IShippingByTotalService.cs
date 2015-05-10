@@ -48,5 +48,15 @@ namespace Nop.Plugin.Shipping.ByTotalWithFree.Services {
     /// </summary>
     /// <param name="shippingByTotalRecord">ShippingByTotalRecord</param>
     void UpdateShippingByTotalRecord( ShippingByTotalRecord shippingByTotalRecord );
+
+    IPagedList<FreeShippingProductRecord> GetAllFreeShippingProductRecords( int pageIndex = 0, int pageSize = int.MaxValue );
+
+    FreeShippingProductRecord GetFreeShippingProductRecordById( int freeShippingProductRecordId );
+
+    FreeShippingProductRecord FindFreeShippingProductRecord( int storeId, int productId, int countryId );
+
+    void DeleteFreeShippingProductRecord( FreeShippingProductRecord freeShippingProductRecord );
+
+    void InsertFreeShippingProductRecord( FreeShippingProductRecord freeShippingProductRecord );
   }
 }

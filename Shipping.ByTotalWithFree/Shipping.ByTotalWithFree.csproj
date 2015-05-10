@@ -102,10 +102,13 @@
     <Compile Include="ByTotalShippingComputationMethod.cs" />
     <Compile Include="Controllers\ShippingByTotalWithFreeController.cs" />
     <Compile Include="Data\EfStartUpTask.cs" />
-    <Compile Include="Data\ShippingByTotalObjectContext.cs" />
+    <Compile Include="Data\FreeShippingProductRecord.cs" />
+    <Compile Include="Data\FreeShippingProductRecordMap.cs" />
+    <Compile Include="Data\PluginObjectContext.cs" />
     <Compile Include="Data\ShippingByTotalRecordMap.cs" />
     <Compile Include="DependencyRegistrar.cs" />
     <Compile Include="Data\ShippingByTotalRecord.cs" />
+    <Compile Include="Models\FreeShippingProductModel.cs" />
     <Compile Include="Models\ShippingByTotalListModel.cs" />
     <Compile Include="Models\ShippingByTotalModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -11,17 +11,20 @@ namespace Nop.Plugin.Shipping.ByTotalWithFree.Services {
   /// Shipping By Total Service
   /// </summary>
   public class ShippingByTotalService: IShippingByTotalService {
-    private const string ShippingbytotalAllKey = "Nop.shippingbytotalwithfree.all";
-    private const string ShippingbytotalPatternKey = "Nop.shippingbytotalwithfree.";
+    private const string ShippingByTotalAllKey = "Nop.shippingbytotalwithfree.all";
+    private const string ShippingByTotalPatternKey = "Nop.shippingbytotalwithfree.";
+    private const string FreeShippingProductAllKey = "Nop.shippingbytotalwithfree_freeshippingproduct.all";
+    private const string FreeShippingProductPatternKey = "Nop.shippingbytotalwithfree_freeshippingproduct.";
 
     private readonly IRepository<ShippingByTotalRecord> _sbtRepository;
+    private readonly IRepository<FreeShippingProductRecord> _fspRepository;
     private readonly ICacheManager _cacheManager;
 
-    public ShippingByTotalService( ICacheManager cacheManager, IRepository<ShippingByTotalRecord> sbtRepository ) {
+    public ShippingByTotalService( ICacheManager cacheManager, IRepository<ShippingByTotalRecord> sbtRepository, IRepository<FreeShippingProductRecord> fspRepository ) {
       _cacheManager = cacheManager;
       _sbtRepository = sbtRepository;
+      _fspRepository = fspRepository;
     }
-
 
     /// <summary>
     /// Gets all the ShippingByTotalRecords
@@ -30,7 +33,7 @@ namespace Nop.Plugin.Shipping.ByTotalWithFree.Services {
     /// <param name="pageSize">page size</param>
     /// <returns>ShippingByTotalRecord collection</returns>
     public virtual IPagedList<ShippingByTotalRecord> GetAllShippingByTotalRecords( int pageIndex = 0, int pageSize = int.MaxValue ) {
-      return _cacheManager.Get( ShippingbytotalAllKey, () => {
+      return _cacheManager.Get( ShippingByTotalAllKey, () => {
         var query = from sbt in _sbtRepository.Table
                     orderby sbt.StoreId, sbt.CountryId, sbt.StateProvinceId, sbt.DisplayOrder, sbt.ShippingMethodId, sbt.From, sbt.Id
                     select sbt;
@@ -273,7 +276,7 @@ namespace Nop.Plugin.Shipping.ByTotalWithFree.Services {
 
       _sbtRepository.Delete( shippingByTotalRecord );
 
-      _cacheManager.RemoveByPattern( ShippingbytotalPatternKey );
+      _cacheManager.RemoveByPattern( ShippingByTotalPatternKey );
     }
 
     /// <summary>
@@ -287,7 +290,7 @@ namespace Nop.Plugin.Shipping.ByTotalWithFree.Services {
 
       _sbtRepository.Insert( shippingByTotalRecord );
 
-      _cacheManager.RemoveByPattern( ShippingbytotalPatternKey );
+      _cacheManager.RemoveByPattern( ShippingByTotalPatternKey );
     }
 
     /// <summary>
@@ -301,7 +304,73 @@ namespace Nop.Plugin.Shipping.ByTotalWithFree.Services {
 
       _sbtRepository.Update( shippingByTotalRecord );
 
-      _cacheManager.RemoveByPattern( ShippingbytotalPatternKey );
+      _cacheManager.RemoveByPattern( ShippingByTotalPatternKey );
+    }
+
+    public IPagedList<FreeShippingProductRecord> GetAllFreeShippingProductRecords( int pageIndex = 0, int pageSize = Int32.MaxValue ) {
+      return _cacheManager.Get( FreeShippingProductAllKey, () => {
+        var query = from sbt in _fspRepository.Table
+                    orderby sbt.StoreId, sbt.CountryId, sbt.ProductId
+                    select sbt;
+
+        var records = new PagedList<FreeShippingProductRecord>( query, pageIndex, pageSize );
+
+        return records;
+      } );
+    }
+
+    public FreeShippingProductRecord GetFreeShippingProductRecordById( int freeShippingProductRecordId ) {
+      if ( freeShippingProductRecordId == 0 ) {
+        return null;
+      }
+
+      var record = _fspRepository.GetById( freeShippingProductRecordId );
+
+      return record;
+    }
+
+    public FreeShippingProductRecord FindFreeShippingProductRecord( int storeId, int productId, int countryId ) {
+      // filter by product id and country id
+      var freeShippingProducts = GetAllFreeShippingProductRecords()
+          .Where( fsp => fsp.ProductId == productId && fsp.CountryId == countryId )
+          .ToList();
+
+      // filter by store
+      var matchedByStore = new List<FreeShippingProductRecord>();
+      foreach ( var sbtr in freeShippingProducts ) {
+        if ( storeId == sbtr.StoreId ) {
+          matchedByStore.Add( sbtr );
+        }
+      }
+      if ( matchedByStore.Count == 0 ) {
+        foreach ( var sbtr in freeShippingProducts ) {
+          if ( sbtr.StoreId == 0 ) {
+            matchedByStore.Add( sbtr );
+          }
+        }
+      }
+
+      return matchedByStore.FirstOrDefault();
+    }
+
+    public void DeleteFreeShippingProductRecord( FreeShippingProductRecord freeShippingProductRecord ) {
+      if ( freeShippingProductRecord == null ) {
+        throw new ArgumentNullException( "freeShippingProductRecord" );
+      }
+
+      _fspRepository.Delete( freeShippingProductRecord );
+
+      _cacheManager.RemoveByPattern( FreeShippingProductPatternKey );
+    }
+
+    public void InsertFreeShippingProductRecord( FreeShippingProductRecord freeShippingProductRecord ) {
+      if ( freeShippingProductRecord == null ) {
+        throw new ArgumentNullException( "freeShippingProductRecord" );
+      }
+
+      _fspRepository.Insert( freeShippingProductRecord );
+
+      _cacheManager.RemoveByPattern( FreeShippingProductPatternKey );
     }
   }
 }

@@ -12,6 +12,12 @@ namespace Nop.Plugin.Shipping.ByTotalWithFree {
         new[] { "Nop.Plugin.Shipping.ByTotalWithFree.Controllers" }
       );
       routes.MapRoute(
+        "Plugin.Shipping.ByTotalWithFree.AddFreeShippingProduct",
+        "Plugins/ShippingByTotalWithFree/AddFreeShippingProduct",
+        new { controller = "ShippingByTotalWithFree", action = "AddFreeShippingProduct" },
+        new[] { "Nop.Plugin.Shipping.ByTotalWithFree.Controllers" }
+      );
+      routes.MapRoute(
         "Plugin.Shipping.ByTotalWithFree.SaveGeneralSettings",
         "Plugins/ShippingByTotalWithFree/SaveGeneralSettings",
         new { controller = "ShippingByTotalWithFree", action = "SaveGeneralSettings" },
