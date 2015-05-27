@@ -81,7 +81,7 @@
                             field: "CountryId",
                             title: "@T( "Plugins.Shipping.ByTotalWithFree.Fields.Country" )",
                             width: 250,
-                            editor: countriesDropDownEditor,
+                            editor: countriesWithAllDropDownEditor,
                             template: "#=CountryName#"
                         }, {
                             field: "StateProvinceId",
@@ -224,6 +224,22 @@
      }
     ];
 
+    var countriesWithAll = [
+     @for (int i = 0; i < Model.AvailableCountriesWithAll.Count; i++)
+    {
+        var country = Model.AvailableCountriesWithAll[i];
+        <text>
+        {
+            CountryId: @country.Value,
+            CountryName: "@(country.Text)"
+        }</text>
+        if (i != Model.AvailableCountriesWithAll.Count - 1)
+        {
+            <text>,</text>
+        }
+    }
+    ];
+
     function shippingMethodsDropDownEditor(container, options) {
         $('<input required data-text-field="ShippingMethodName" data-value-field="ShippingMethodId" data-bind="value:' + options.field + '"/>')
             .appendTo(container)
@@ -298,6 +314,34 @@
             });
     }
 
+    function countriesWithAllDropDownEditor(container, options) {
+        $('<input required data-text-field="CountryName" data-value-field="CountryId" data-bind="value:' + options.field + '"/>')
+            .appendTo(container)
+            .kendoDropDownList({
+                autoBind: false,
+                dataSource: {
+                    data: countriesWithAll,
+                    schema: {
+                        model: {
+                            fields: {
+                                CountryId: { type: "string" },
+                                CountryName: { type: "string" },
+                            }
+                        }
+                    },
+                    error: function (e) {
+                        display_kendoui_grid_error(e);
+                        this.cancelChanges();
+                    }
+                },
+            }).change(function(e){
+                options.model.StateProvinceId = 0;
+                var statesProvincesDDL = $('[data-value-field=StateProvinceId]').data("kendoDropDownList");
+                statesProvincesDDL.dataSource.transport.options.read.data = { countryId: options.model.CountryId, addAsterisk: "true" }
+                statesProvincesDDL.dataSource.read();
+            });
+    }
+
     function statesProvincesDropDownEditor(container, options) {
         $('<input required data-text-field="StateProvinceName" data-value-field="StateProvinceId" data-bind="value:' + options.field + '"/>')
             .appendTo(container)
@@ -340,31 +384,56 @@
 </script>
 @using ( Html.BeginForm() ) {
     <script type="text/javascript">
-        $(function () {
-            $("#@Html.FieldIdFor(model => model.AddUsePercentage)").click(toggleAddUsePercentage);
-            toggleAddUsePercentage();
-        });
-        function toggleAddUsePercentage() {
-            if ($('#@Html.FieldIdFor(model => model.AddUsePercentage)').is(':checked')) {
-                $('#pnlAddShippingChargePercentage').show();
-                $('#pnlAddShippingChargeAmount').hide();
-            }
-            else {
-                $('#pnlAddShippingChargePercentage').hide();
-                $('#pnlAddShippingChargeAmount').show();
-            }
+    $(function () {
+        $("#@Html.FieldIdFor(model => model.AddUsePercentage)").click(toggleAddUsePercentage);
+        toggleAddUsePercentage();
+    });
+    function toggleAddUsePercentage() {
+        if ($('#@Html.FieldIdFor(model => model.AddUsePercentage)').is(':checked')) {
+            $('#pnlAddShippingChargePercentage').show();
+            $('#pnlAddShippingChargeAmount').hide();
         }
+        else {
+            $('#pnlAddShippingChargePercentage').hide();
+            $('#pnlAddShippingChargeAmount').show();
+        }
+    }
+    $(function () {
+        $('#addshippingbytotalrecord').click(function () {
+            $.ajax({
+                cache: false,
+                type: 'POST',
+                url: '@Url.RouteUrl( "Plugin.Shipping.ByTotalWithFree.AddShippingRate" )',
+                data: $(this.form).serialize(),
+                dataType: 'json',
+                success: function (data) {
+                    if (data.Result == true) {
+                        var grid = $("#shipping-bytotal-grid").data("kendoGrid");
+                        grid.dataSource.read();
+                    }
+                    else {
+                        alert(data.Message);
+                    }
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    alert('@T( "Plugins.Shipping.ByTotalWithFree.ManageShippingSettings.AddFailed" ).Text');
+                    }
+                });
+                return false;
+            });
+        });
+
         $(function () {
-            $('#addshippingbytotalrecord').click(function () {
+            $('#addfreeshippingproductrecord').click(function () {
                 $.ajax({
                     cache: false,
                     type: 'POST',
-                    url: '@Url.RouteUrl( "Plugin.Shipping.ByTotalWithFree.AddShippingRate" )',
+                    url: '@Url.RouteUrl( "Plugin.Shipping.ByTotalWithFree.AddFreeShippingProduct" )',
                     data: $(this.form).serialize(),
                     dataType: 'json',
                     success: function (data) {
                         if (data.Result == true) {
-                            var grid = $("#shipping-bytotal-grid").data("kendoGrid");
+                            var grid = $("#free-shipping-products-grid").data("kendoGrid");
                             grid.dataSource.read();
                         }
                         else {
@@ -385,25 +454,25 @@
                     cache: false,
                     type: 'POST',
                     url: '@Url.RouteUrl( "Plugin.Shipping.ByTotalWithFree.SaveGeneralSettings" )',
-                    data: $(this.form).serialize(),
-                    dataType: 'json',
-                    success: function (data) {
-                        alert(data.Message);
-                    },
-                    error: function (xhr, ajaxOptions, thrownError) {
-                        alert('@T( "Plugins.Shipping.ByTotalWithFree.ManageShippingSettings.AddFailed" ).Text');
-                    }
-                });
-                return false;
+                data: $(this.form).serialize(),
+                dataType: 'json',
+                success: function (data) {
+                    alert(data.Message);
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    alert('@T( "Plugins.Shipping.ByTotalWithFree.ManageShippingSettings.AddFailed" ).Text');
+                }
             });
+            return false;
         });
+    });
 
-        $(function () {
-            $('#resetshippingbytotalrecord').click(function () {
-                $('#@Html.FieldIdFor(model => model.AddUsePercentage)').attr('checked', false);
-                toggleAddUsePercentage();
-            });
+    $(function () {
+        $('#resetshippingbytotalrecord').click(function () {
+            $('#@Html.FieldIdFor(model => model.AddUsePercentage)').attr('checked', false);
+            toggleAddUsePercentage();
         });
+    });
     </script>
     <fieldset>
         <legend><span style="font-weight: 700">@T( "Plugins.Shipping.ByTotalWithFree.AddNewRecordTitle" )</span></legend>
@@ -541,21 +610,127 @@
             </tr>
         </table>
     </fieldset>
+
+    <table class="adminContent">
+        <tr>
+            <td>
+                <div id="free-shipping-products-grid"></div>
+                <script type="text/javascript">
+                    $(document).ready(function () {
+                        $("#free-shipping-products-grid").kendoGrid({
+                            dataSource: {
+                                type: "json",
+                                transport: {
+                                    destroy: {
+                                        url: "@Html.Raw( Url.Action( "FreeShippingDelete", "ShippingByTotalWithFree", new RouteValueDictionary() { { "Namespaces", "Nop.Plugin.Shipping.ByTotalWithFree.Controllers" }, { "area", "" } } ) )",
+                                        type: "POST",
+                                        dataType: "json"
+                                    },
+                                    read: {
+                                        url: "@Html.Raw( Url.Action( "FreeShippingList", "ShippingByTotalWithFree", new RouteValueDictionary() { { "Namespaces", "Nop.Plugin.Shipping.ByTotalWithFree.Controllers" }, { "area", "" } } ) )",
+                                        type: "POST",
+                                        dataType: "json"
+                                    }
+                                },schema: {
+                                    data: "Data",
+                                    total: "Total",
+                                    errors: "Errors",
+                                    model: {
+                                        id: "Id"
+                                    }
+                                },
+                                requestEnd: function (e) {
+                                    if (e.type == "update") {
+                                        this.read();
+                                    }
+                                },
+                                error: function (e) {
+                                    display_kendoui_grid_error(e);
+                                    this.cancelChanges();
+                                },
+                                pageSize: @(defaultGridPageSize),
+                                serverPaging: true,
+                                serverFiltering: true,
+                                serverSorting: true
+                            },
+                            pageable: {
+                                refresh: true,
+                                pageSizes: [@(gridPageSizes)]
+                            },
+                            editable: {
+                                confirmation: false,
+                                mode: "inline"
+                            },
+                            scrollable: false,
+                            columns: [{
+                                field: "StoreId",
+                                title: "@T( "Plugins.Shipping.ByTotalWithFree.Fields.Store" )",
+                                width: 250,
+                                editor: storesDropDownEditor,
+                                template: "#=StoreName#"
+                            }, {
+                                field: "CountryId",
+                                title: "@T( "Plugins.Shipping.ByTotalWithFree.Fields.Country" )",
+                                width: 250,
+                                editor: countriesDropDownEditor,
+                                template: "#=CountryName#"
+                            }, {
+                                field: "ProductId",
+                                title: "@T( "Plugins.Shipping.ByTotalWithFree.Fields.Product" )",
+                                width: 250,
+                                template: "#=ProductName#"
+                            }, {
+                                command: { name: "destroy", text: "@T("Admin.Common.Delete")" },
+                                title: "@T("Admin.Common.Delete")",
+                                width: 100
+                            }]
+                        });
+                    });
+                </script>
+            </td>
+        </tr>
+    </table>
+
     <fieldset>
-        <legend><span style="font-weight: 700">@T( "Plugins.Shipping.ByTotalWithFree.FreeShippingCountriesTitle" )</span></legend>
+        <legend><span style="font-weight: 700">@T( "Plugins.Shipping.ByTotalWithFree.FreeShippingProductsTitle" )</span></legend>
         <table class="adminContent">
             <tr>
                 <td class="adminTitle">
-                    @Html.NopLabelFor( model => model.FreeShippingCountries ):
+                    @Html.NopLabelFor( model => model.AddStoreId ):
                 </td>
                 <td class="adminData">
-                    <ul>
-                        @foreach ( var country in Model.FreeShippingCountries ) {
-                            <li>@country.Text</li>
-                        }
-                    </ul>
+                    @Html.DropDownListFor( model => model.AddStoreId, Model.AvailableStores )
+                    @Html.ValidationMessageFor( model => model.AddStoreId )
+                </td>
+            </tr>
+            <tr>
+                <td class="adminTitle">
+                    @Html.NopLabelFor( model => model.AddFreeShippingCountryId ):
+                </td>
+                <td class="adminData">
+                    @Html.DropDownListFor( model => model.AddFreeShippingCountryId, Model.AvailableCountries )
+                    @Html.ValidationMessageFor( model => model.AddFreeShippingCountryId )
+                </td>
+            </tr>
+            <tr>
+                <td class="adminTitle">
+                    @Html.NopLabelFor( model => model.AddProductId ):
+                </td>
+                <td class="adminData">
+                    @Html.EditorFor( model => model.AddProductId )
+                    @Html.ValidationMessageFor( model => model.AddProductId )
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <button type="button" id="addfreeshippingproductrecord" class="k-button">
+                        @T( "Admin.Common.AddNew" )
+                    </button>
+                    <button type="reset" id="resetfreeshippingproductrecord" class="k-button">
+                        @T( "Plugins.Shipping.ByTotalWithFree.Reset" )
+                    </button>
                 </td>
             </tr>
         </table>
-</fieldset>
+    </fieldset>
 }

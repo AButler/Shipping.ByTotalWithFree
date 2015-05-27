@@ -6,6 +6,7 @@ using Nop.Core.Domain.Directory;
 using Nop.Plugin.Shipping.ByTotalWithFree.Data;
 using Nop.Plugin.Shipping.ByTotalWithFree.Models;
 using Nop.Plugin.Shipping.ByTotalWithFree.Services;
+using Nop.Services.Catalog;
 using Nop.Services.Configuration;
 using Nop.Services.Directory;
 using Nop.Services.Localization;
@@ -30,6 +31,7 @@ namespace Nop.Plugin.Shipping.ByTotalWithFree.Controllers {
     private readonly CurrencySettings _currencySettings;
     private readonly IPermissionService _permissionService;
     private readonly ILocalizationService _localizationService;
+    private readonly IProductService _productService;
 
     public ShippingByTotalWithFreeController( IShippingService shippingService,
         IStoreService storeService,
@@ -41,7 +43,8 @@ namespace Nop.Plugin.Shipping.ByTotalWithFree.Controllers {
         ICurrencyService currencyService,
         CurrencySettings currencySettings,
         IPermissionService permissionService,
-        ILocalizationService localizationService ) {
+        ILocalizationService localizationService,
+        IProductService productService ) {
       _shippingService = shippingService;
       _storeService = storeService;
       _settingService = settingService;
@@ -53,6 +56,7 @@ namespace Nop.Plugin.Shipping.ByTotalWithFree.Controllers {
       _currencySettings = currencySettings;
       _permissionService = permissionService;
       _localizationService = localizationService;
+      _productService = productService;
     }
 
     protected override void Initialize( System.Web.Routing.RequestContext requestContext ) {
@@ -83,21 +87,16 @@ namespace Nop.Plugin.Shipping.ByTotalWithFree.Controllers {
       }
 
       // countries
-      model.AvailableCountries.Add( new SelectListItem { Text = "*", Value = "0" } );
+      model.AvailableCountriesWithAll.Add( new SelectListItem { Text = "*", Value = "0" } );
       var countries = _countryService.GetAllCountries( true );
       foreach ( var c in countries ) {
         model.AvailableCountries.Add( new SelectListItem { Text = c.Name, Value = c.Id.ToString() } );
+        model.AvailableCountriesWithAll.Add( new SelectListItem { Text = c.Name, Value = c.Id.ToString() } );
       }
 
       model.AvailableStates.Add( new SelectListItem { Text = "*", Value = "0" } );
       model.LimitMethodsToCreated = _shippingByTotalWithFreeSettings.LimitMethodsToCreated;
       model.PrimaryStoreCurrencyCode = _currencyService.GetCurrencyById( _currencySettings.PrimaryStoreCurrencyId ).CurrencyCode;
-
-      // free shipping countries
-      foreach ( var countryId in _shippingByTotalWithFreeSettings.CountriesWithFreeShipping ) {
-        var country = countries.Single( c => c.Id == countryId );
-        model.FreeShippingCountries.Add( new SelectListItem { Text = country.Name, Value = country.Id.ToString() } );
-      }
 
       return View( "~/Plugins/Shipping.ByTotalWithFree/Views/ShippingByTotalWithFree/Configure.cshtml", model );
     }
@@ -192,6 +191,57 @@ namespace Nop.Plugin.Shipping.ByTotalWithFree.Controllers {
     }
 
     [HttpPost]
+    public ActionResult FreeShippingList( DataSourceRequest command ) {
+      if ( !_permissionService.Authorize( StandardPermissionProvider.ManageShippingSettings ) ) {
+        return Content( _localizationService.GetResource( "Plugins.Shipping.ByTotalWithFree.ManageShippingSettings.AccessDenied" ) );
+      }
+
+      var records = _shippingByTotalService.GetAllFreeShippingProductRecords( command.Page - 1, command.PageSize );
+      var fspModel = records.Select( x => {
+        var m = new FreeShippingProductModel {
+          Id = x.Id,
+          StoreId = x.StoreId,
+          CountryId = x.CountryId,
+          ProductId = x.ProductId
+        };
+
+        // store
+        var store = _storeService.GetStoreById( x.StoreId );
+        m.StoreName = ( store != null ) ? store.Name : "*";
+
+        // country
+        var c = _countryService.GetCountryById( x.CountryId );
+        m.CountryName = ( c != null ) ? c.Name : "*";
+
+        // product
+        var p = _productService.GetProductById( x.ProductId );
+        m.ProductName = p.Name;
+
+        return m;
+      } ).ToList();
+
+      var gridModel = new DataSourceResult {
+        Data = fspModel,
+        Total = records.TotalCount
+      };
+
+      return Json( gridModel );
+    }
+
+    [HttpPost]
+    public ActionResult FreeShippingDelete( int id ) {
+      if ( !_permissionService.Authorize( StandardPermissionProvider.ManageShippingSettings ) ) {
+        return Content( _localizationService.GetResource( "Plugins.Shipping.ByTotalWithFree.ManageShippingSettings.AccessDenied" ) );
+      }
+
+      var freeShippingProductRecord = _shippingByTotalService.GetFreeShippingProductRecordById( id );
+      if ( freeShippingProductRecord != null ) {
+        _shippingByTotalService.DeleteFreeShippingProductRecord( freeShippingProductRecord );
+      }
+      return new NullJsonResult();
+    }
+
+    [HttpPost]
     public ActionResult AddShippingRate( ShippingByTotalListModel model ) {
       if ( !_permissionService.Authorize( StandardPermissionProvider.ManageShippingSettings ) ) {
         return Json( new { Result = false, Message = _localizationService.GetResource( "Plugins.Shipping.ByTotalWithFree.ManageShippingSettings.AccessDenied" ) } );
@@ -221,6 +271,23 @@ namespace Nop.Plugin.Shipping.ByTotalWithFree.Controllers {
         ShippingChargeAmount = ( model.AddUsePercentage ) ? 0 : model.AddShippingChargeAmount
       };
       _shippingByTotalService.InsertShippingByTotalRecord( shippingByTotalRecord );
+
+      return Json( new { Result = true } );
+    }
+
+    [HttpPost]
+    public ActionResult AddFreeShippingProduct( ShippingByTotalListModel model ) {
+      if ( !_permissionService.Authorize( StandardPermissionProvider.ManageShippingSettings ) ) {
+        return Json( new { Result = false, Message = _localizationService.GetResource( "Plugins.Shipping.ByTotalWithFree.ManageShippingSettings.AccessDenied" ) } );
+      }
+
+      var freeShippingProductRecord = new FreeShippingProductRecord {
+        StoreId = model.AddStoreId,
+        ProductId = model.AddProductId,
+        CountryId = model.AddFreeShippingCountryId
+      };
+
+      _shippingByTotalService.InsertFreeShippingProductRecord( freeShippingProductRecord );
 
       return Json( new { Result = true } );
     }

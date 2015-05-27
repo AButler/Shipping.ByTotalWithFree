@@ -9,13 +9,14 @@ namespace Nop.Plugin.Shipping.ByTotalWithFree.Data {
   /// <summary>
   /// Object context
   /// </summary>
-  public class ShippingByTotalObjectContext: DbContext, IDbContext {
-    public ShippingByTotalObjectContext( string nameOrConnectionString )
+  public class PluginObjectContext: DbContext, IDbContext {
+    public PluginObjectContext( string nameOrConnectionString )
       : base( nameOrConnectionString ) {
     }
 
     protected override void OnModelCreating( DbModelBuilder modelBuilder ) {
       modelBuilder.Configurations.Add( new ShippingByTotalRecordMap() );
+      modelBuilder.Configurations.Add( new FreeShippingProductRecordMap() );
 
       //disable EdmMetadata generation
       //modelBuilder.Conventions.Remove<IncludeMetadataConvention>();
